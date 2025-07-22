@@ -30,28 +30,41 @@
 // }
 
 //Sound effect added 
-// Pig.hpp
-#ifndef PIG_HPP
-#define PIG_HPP
+// Pig.cpp
+#include "Pig.hpp"
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp>
+Pig::Pig(float x, float y) :
+    alive(true)
+{
+    shape.setRadius(15.0f);
+    shape.setFillColor(sf::Color::Green);
+    shape.setOrigin(shape.getRadius(), shape.getRadius());
+    shape.setPosition(x, y);
 
-class Pig {
-public:
-    Pig(float x, float y);
+    // Load sound file
+    if (!hitBuffer.loadFromFile("pig_hit.wav")) {
+        // You can log or print an error, depending on your setup
+        // For now, we’ll just leave it silent if loading fails
+    } else {
+        hitSound.setBuffer(hitBuffer);
+    }
+}
 
-    void draw(sf::RenderWindow& window);
-    sf::FloatRect getBounds() const;
-    bool isAlive() const;
-    void hit(); // Mark pig as hit/destroyed and play sound
+void Pig::draw(sf::RenderWindow& window) {
+    if (alive) {
+        window.draw(shape);
+    }
+}
 
-private:
-    sf::CircleShape shape;
-    bool alive;
+sf::FloatRect Pig::getBounds() const {
+    return shape.getGlobalBounds();
+}
 
-    sf::SoundBuffer hitBuffer;
-    sf::Sound hitSound;
-};
+bool Pig::isAlive() const {
+    return alive;
+}
 
-#endif // PIG_HPP
+void Pig::hit() {
+    alive = false;
+    hitSound.play(); // Play sound when pig is hit
+}
