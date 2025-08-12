@@ -21,7 +21,7 @@ void Pig::loadResources() {
     }
 
     if (!soundsLoaded) {
-        if (!pigHitSoundBuffer.loadFromFile("src/pig_hit.wav")) { // Assuming pig_hit.wav is in src/
+        if (!pigHitSoundBuffer.loadFromFile("src/pigdeath.wav")) { // Assuming pig_hit.wav is in src/
             std::cerr << "CRITICAL ERROR: Could not load static pig_hit.wav! No pig hit sounds will play." << std::endl;
             soundsLoaded = false;
         } else {
