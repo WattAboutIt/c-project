@@ -26,7 +26,7 @@ void Pig::loadResources() {
             soundsLoaded = false;
         } else {
             soundsLoaded = true;
-            std::cout << "DEBUG: Static pig_hit.wav loaded successfully." << std::endl;
+            std::cout << "DEBUG: Static pigdeath.wav loaded successfully." << std::endl;
         }
     }
 }
@@ -95,6 +95,9 @@ bool Pig::isSoundPlaying() const {
 void Pig::hit(Game* game) {
     if (alive) {
         alive = false;
+        if (game) { // Check if the game pointer is valid
+            game->addScore(10); // NEW: Add 10 points to the score
+        }
         // Play sound ONLY if static sound buffer was successfully loaded
         if (soundsLoaded) {
             hitSound.play();

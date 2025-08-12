@@ -2,13 +2,15 @@
 #include "Game.hpp"
 #include <iostream> // For debugging output
 #include <algorithm> // Required for std::remove_if
+#include <sstream> // For converting score to string
 
 Game::Game() :
     window(sf::VideoMode({800, 600}), "Angry Birds Clone"),
     bird(100.0f, 450.0f), // Initial bird position (near slingshot)
     mousePressed(false),
     currentGameState(GameState::MainMenu), // Start in MainMenu state
-    pendingLevelReset(false) // Initialize pendingLevelReset
+    pendingLevelReset(false), // Initialize pendingLevelReset
+    score(0) // NEW: Initialize score
 {
     window.setFramerateLimit(60);
 
@@ -16,7 +18,7 @@ Game::Game() :
     Pig::loadResources();
     // -------------------------------------------------------------
 
-    // Load font for menu text
+    // Load font for menu and score text
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")) {
         std::cerr << "Error loading font. Make sure the path is correct." << std::endl;
     }
@@ -36,6 +38,13 @@ Game::Game() :
     startText.setFillColor(sf::Color::Yellow);
     startText.setOrigin(startText.getLocalBounds().width / 2, startText.getLocalBounds().height / 2);
     startText.setPosition(window.getSize().x / 2, window.getSize().y / 2 + 50);
+    
+    // NEW: Setup score text
+    scoreText.setFont(font);
+    scoreText.setCharacterSize(24);
+    scoreText.setFillColor(sf::Color::White);
+    scoreText.setPosition(10.0f, 10.0f);
+    updateScoreText();
 }
 
 // New: Method to play sounds and manage their lifetime
@@ -191,6 +200,9 @@ void Game::render() {
             for (auto& pig : pigs) {
                 pig.draw(window);
             }
+            
+            // NEW: Draw the score text
+            window.draw(scoreText);
         } // <--- NEW: Close brace for the scope
             break;
         case GameState::GameOver:
@@ -245,4 +257,16 @@ void Game::drawMainMenu() {
     window.clear(sf::Color::Black); // Black background for menu
     window.draw(titleText);
     window.draw(startText);
+}
+
+// NEW: Scoreboard methods
+void Game::addScore(int points) {
+    score += points;
+    updateScoreText();
+}
+
+void Game::updateScoreText() {
+    std::stringstream ss;
+    ss << "Score: " << score;
+    scoreText.setString(ss.str());
 }
