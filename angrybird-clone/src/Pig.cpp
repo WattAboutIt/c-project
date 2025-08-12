@@ -1,86 +1,69 @@
-// src/Pig.cpp
 #include "Pig.hpp"
 #include <iostream>
 #include "Game.hpp"
 
-// --- Define static members outside the class ---
-sf::Texture Pig::pigTexture;
-sf::SoundBuffer Pig::pigHitSoundBuffer;
+using namespace std;
+using namespace sf;
+
+Texture Pig::pigTexture;
+SoundBuffer Pig::pigHitSoundBuffer;
 bool Pig::texturesLoaded = false;
 bool Pig::soundsLoaded = false;
 
 void Pig::loadResources() {
     if (!texturesLoaded) {
-        if (!pigTexture.loadFromFile("src/pig.png")) { // Assuming pig.png is in src/
-            std::cerr << "CRITICAL ERROR: Could not load static pig.png! All pigs will be green circles." << std::endl;
+        if (!pigTexture.loadFromFile("src/pig.png")) {
+            cerr << "CRITICAL ERROR: Could not load static pig.png! All pigs will be green circles.\n";
             texturesLoaded = false;
         } else {
             texturesLoaded = true;
-            std::cout << "DEBUG: Static pig.png loaded successfully." << std::endl;
+            cout << "DEBUG: Static pig.png loaded successfully.\n";
         }
     }
 
     if (!soundsLoaded) {
-        if (!pigHitSoundBuffer.loadFromFile("src/pigdeath.wav")) { // Assuming pig_hit.wav is in src/
-            std::cerr << "CRITICAL ERROR: Could not load static pig_hit.wav! No pig hit sounds will play." << std::endl;
+        if (!pigHitSoundBuffer.loadFromFile("src/pigdeath.wav")) {
+            cerr << "CRITICAL ERROR: Could not load static pig_hit.wav! No pig hit sounds will play.\n";
             soundsLoaded = false;
         } else {
             soundsLoaded = true;
-            std::cout << "DEBUG: Static pigdeath.wav loaded successfully." << std::endl;
+            cout << "DEBUG: Static .wav loaded successfully.\n";
         }
     }
 }
-// ----------------------------------------------------
 
-Pig::Pig(float x, float y) :
-    alive(true)
-{
-    // Always initialize shape first as a fallback
-    shape.setRadius(15.0f);
-    shape.setFillColor(sf::Color::Green); // Default to green circle
+Pig::Pig(float x, float y) : alive(true) {
+    shape.setRadius(15.f);
+    shape.setFillColor(Color::Green);
     shape.setOrigin(shape.getRadius(), shape.getRadius());
     shape.setPosition(x, y);
-    shape.setOutlineThickness(0); // No outline by default
+    shape.setOutlineThickness(0);
 
-    // Use the static texture if loaded
     if (texturesLoaded) {
         sprite.setTexture(pigTexture);
-        sprite.setScale(60.0f / pigTexture.getSize().x, 60.0f / pigTexture.getSize().y);
-        sprite.setOrigin(pigTexture.getSize().x / 2.0f, pigTexture.getSize().y / 2.0f); // Center origin
+        sprite.setScale(60.f / pigTexture.getSize().x, 60.f / pigTexture.getSize().y);
+        sprite.setOrigin(pigTexture.getSize().x / 2.f, pigTexture.getSize().y / 2.f);
         sprite.setPosition(x, y);
 
-        // Make shape transparent as sprite is now the visual, but keep its position/size aligned
-        shape.setRadius(sprite.getGlobalBounds().width / 2.0f);
+        shape.setRadius(sprite.getGlobalBounds().width / 2.f);
         shape.setOrigin(shape.getRadius(), shape.getRadius());
         shape.setPosition(x, y);
-        shape.setFillColor(sf::Color::Transparent); // Make shape invisible
-    } else {
-        // If static texture failed to load, the shape remains the visible green circle fallback
-        // Its position is already set above
+        shape.setFillColor(Color::Transparent);
     }
 
-    // Use the static sound buffer if loaded
     if (soundsLoaded) {
         hitSound.setBuffer(pigHitSoundBuffer);
-        hitSound.setVolume(100); // Set volume to 100
-    } else {
-        // If static sound failed to load, hitSound will not have a buffer
+        hitSound.setVolume(100.f);
     }
 }
 
-void Pig::draw(sf::RenderWindow& window) {
-    if (alive) {
-        // Draw the sprite if static texture was successfully loaded, otherwise draw the shape fallback
-        if (texturesLoaded) {
-            window.draw(sprite);
-        } else {
-            window.draw(shape); // Draw the green circle fallback
-        }
-    }
+void Pig::draw(RenderWindow& window) {
+    if (!alive) return;
+    if (texturesLoaded) window.draw(sprite);
+    else window.draw(shape);
 }
 
-sf::FloatRect Pig::getBounds() const {
-    // Return bounds of the shape for collision detection, as shape is consistently sized for collision
+FloatRect Pig::getBounds() const {
     return shape.getGlobalBounds();
 }
 
@@ -89,21 +72,17 @@ bool Pig::isAlive() const {
 }
 
 bool Pig::isSoundPlaying() const {
-    return hitSound.getStatus() == sf::Sound::Playing;
+    return hitSound.getStatus() == Sound::Playing;
 }
 
 void Pig::hit(Game* game) {
-    if (alive) {
-        alive = false;
-        if (game) { // Check if the game pointer is valid
-            game->addScore(10); // NEW: Add 10 points to the score
-        }
-        // Play sound ONLY if static sound buffer was successfully loaded
-        if (soundsLoaded) {
-            hitSound.play();
-            std::cout << "DEBUG: Pig hit at (" << shape.getPosition().x << ", " << shape.getPosition().y << ") and attempting to play sound directly!" << std::endl;
-        } else {
-            std::cout << "DEBUG: Pig hit at (" << shape.getPosition().x << ", " << shape.getPosition().y << ") but static sound not loaded!" << std::endl;
-        }
+    if (!alive) return;
+    alive = false;
+    if (game) game->addScore(10);
+    if (soundsLoaded) {
+        hitSound.play();
+        cout << "DEBUG: Pig hit at (" << shape.getPosition().x << ", " << shape.getPosition().y << ") playing sound.\n";
+    } else {
+        cout << "DEBUG: Pig hit at (" << shape.getPosition().x << ", " << shape.getPosition().y << ") but no sound loaded.\n";
     }
 }

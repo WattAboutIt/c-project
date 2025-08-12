@@ -1,67 +1,61 @@
-// src/Game.hpp
 #ifndef GAME_HPP
 #define GAME_HPP
 
 #include <SFML/Graphics.hpp>
-#include <SFML/Audio.hpp> // Required for sf::Sound and sf::SoundBuffer
+#include <SFML/Audio.hpp>
 #include "Bird.hpp"
 #include "Pig.hpp"
 #include <vector>
-#include <algorithm> // Required for std::remove_if
+#include <algorithm>
 #include <string>
 
-// Define game states
+using namespace std;
+using namespace sf;
+
 enum class GameState {
     MainMenu,
     Playing,
-    GameOver // You can expand this later
+    GameOver
 };
 
 class Game {
 public:
     Game();
     void run();
-    void playSound(const sf::SoundBuffer& buffer, float volume); // New: Method to play sounds
-    void addScore(int points); // NEW: Function to add points to the score
+    void playSound(const SoundBuffer& buffer, float volume);
+    void addScore(int points);
 
 private:
-    sf::RenderWindow window;
+    RenderWindow window;
     Bird bird;
-    std::vector<Pig> pigs;
-    sf::Clock clock;
+    vector<Pig> pigs;
+    Clock clock;
     GameState currentGameState;
 
     bool mousePressed;
-    sf::Vector2f mouseClickPos;
-    sf::Vector2f mouseReleasePos;
+    Vector2f mouseClickPos, mouseReleasePos;
 
-    // For Main Menu
-    sf::Font font;
-    sf::Text titleText;
-    sf::Text startText;
+    Font font;
+    Text titleText, startText;
 
-    // For sound management
-    std::vector<sf::Sound> soundQueue;
+    vector<Sound> soundQueue;
 
-    // For delayed level reset
     bool pendingLevelReset;
-    sf::Clock levelResetTimer;
+    Clock levelResetTimer;
 
-    // NEW: For score
     int score;
-    sf::Text scoreText;
-    void updateScoreText(); // NEW: Function to update the score display
+    Text scoreText;
+    void updateScoreText();
 
     void processEvents();
-    void update(sf::Time deltaTime);
+    void update(Time deltaTime);
     void render();
     void checkCollisions();
     void resetLevel();
 
-    // Methods for handling main menu
-    void handleMainMenuInput(sf::Event& event);
-    void updateMainMenu(sf::Time deltaTime);
+    void handleMainMenuInput(Event& event);
+    void updateMainMenu(Time deltaTime);
     void drawMainMenu();
 };
 
-#endif // GAME_HPP
+#endif

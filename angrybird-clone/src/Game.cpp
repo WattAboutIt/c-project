@@ -1,66 +1,57 @@
-// src/Game.cpp
 #include "Game.hpp"
-#include <iostream> // For debugging output
-#include <algorithm> // Required for std::remove_if
-#include <sstream> // For converting score to string
+#include <iostream>
+#include <algorithm>
+#include <sstream>
+
+using namespace std;
+using namespace sf;
 
 Game::Game() :
-    window(sf::VideoMode({800, 600}), "Angry Birds Clone"),
-    bird(100.0f, 450.0f), // Initial bird position (near slingshot)
+    window(VideoMode({800, 600}), "Angry Birds Clone"),
+    bird(100.f, 450.f),
     mousePressed(false),
-    currentGameState(GameState::MainMenu), // Start in MainMenu state
-    pendingLevelReset(false), // Initialize pendingLevelReset
-    score(0) // NEW: Initialize score
+    currentGameState(GameState::MainMenu),
+    pendingLevelReset(false),
+    score(0)
 {
     window.setFramerateLimit(60);
-
-    // --- Load static resources for pigs once at game start ---
     Pig::loadResources();
-    // -------------------------------------------------------------
 
-    // Load font for menu and score text
-    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")) {
-        std::cerr << "Error loading font. Make sure the path is correct." << std::endl;
-    }
+    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
+        cerr << "Error loading font.\n";
 
-    // Setup title text
     titleText.setFont(font);
     titleText.setString("Angry Birds Clone");
     titleText.setCharacterSize(50);
-    titleText.setFillColor(sf::Color::White);
+    titleText.setFillColor(Color::White);
     titleText.setOrigin(titleText.getLocalBounds().width / 2, titleText.getLocalBounds().height / 2);
     titleText.setPosition(window.getSize().x / 2, window.getSize().y / 2 - 50);
 
-    // Setup start text
     startText.setFont(font);
     startText.setString("Press SPACE to Start");
     startText.setCharacterSize(30);
-    startText.setFillColor(sf::Color::Yellow);
+    startText.setFillColor(Color::Yellow);
     startText.setOrigin(startText.getLocalBounds().width / 2, startText.getLocalBounds().height / 2);
     startText.setPosition(window.getSize().x / 2, window.getSize().y / 2 + 50);
-    
-    // NEW: Setup score text
+
     scoreText.setFont(font);
     scoreText.setCharacterSize(24);
-    scoreText.setFillColor(sf::Color::White);
-    scoreText.setPosition(10.0f, 10.0f);
+    scoreText.setFillColor(Color::White);
+    scoreText.setPosition(10.f, 10.f);
     updateScoreText();
 }
 
-// New: Method to play sounds and manage their lifetime
-void Game::playSound(const sf::SoundBuffer& buffer, float volume) {
-    // Create a new sf::Sound object
-    sf::Sound sound;
+void Game::playSound(const SoundBuffer& buffer, float volume) {
+    Sound sound;
     sound.setBuffer(buffer);
     sound.setVolume(volume);
     sound.play();
-    // Add it to the queue. std::move is used for efficiency.
-    soundQueue.push_back(std::move(sound));
+    soundQueue.push_back(move(sound));
 }
 
 void Game::run() {
     while (window.isOpen()) {
-        sf::Time deltaTime = clock.restart(); // Get time since last frame
+        Time deltaTime = clock.restart();
         processEvents();
         update(deltaTime);
         render();
@@ -68,55 +59,35 @@ void Game::run() {
 }
 
 void Game::processEvents() {
-    sf::Event event;
+    Event event;
     while (window.pollEvent(event)) {
-        if (event.type == sf::Event::Closed) {
-            window.close();
-        }
+        if (event.type == Event::Closed) window.close();
 
-        // Handle input based on current game state
         switch (currentGameState) {
             case GameState::MainMenu:
                 handleMainMenuInput(event);
                 break;
             case GameState::Playing:
-                // Mouse button pressed: Start aiming
-                if (event.type == sf::Event::MouseButtonPressed) {
-                    if (event.mouseButton.button == sf::Mouse::Left) {
-                        mousePressed = true;
-                        mouseClickPos = window.mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
-                    }
+                if (event.type == Event::MouseButtonPressed && event.mouseButton.button == Mouse::Left) {
+                    mousePressed = true;
+                    mouseClickPos = window.mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
                 }
-                // Mouse button released: Launch bird
-                if (event.type == sf::Event::MouseButtonReleased) {
-                    if (event.mouseButton.button == sf::Mouse::Left && mousePressed) {
-                        mouseReleasePos = window.mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
-                        
-                        // Calculate launch velocity based on mouse drag
-                        // Dragging back from bird's initial position
-                        sf::Vector2f launchVector = mouseClickPos - mouseReleasePos;
-                        // Scale velocity (adjust multiplier for desired power)
-                        float powerMultiplier = 3.0f; 
-                        bird.launch(launchVector.x * powerMultiplier, launchVector.y * powerMultiplier);
-                        
-                        mousePressed = false;
-                    }
+                if (event.type == Event::MouseButtonReleased && event.mouseButton.button == Mouse::Left && mousePressed) {
+                    mouseReleasePos = window.mapPixelToCoords({event.mouseButton.x, event.mouseButton.y});
+                    Vector2f launchVector = mouseClickPos - mouseReleasePos;
+                    float powerMultiplier = 3.f;
+                    bird.launch(launchVector.x * powerMultiplier, launchVector.y * powerMultiplier);
+                    mousePressed = false;
                 }
-                // Keyboard input for resetting (e.g., 'R' key)
-                if (event.type == sf::Event::KeyPressed) {
-                    if (event.key.code == sf::Keyboard::R) {
-                        resetLevel();
-                    }
-                }
+                if (event.type == Event::KeyPressed && event.key.code == Keyboard::R) resetLevel();
                 break;
             case GameState::GameOver:
-                // Handle game over screen input (e.g., restart, quit)
                 break;
         }
     }
 }
 
-void Game::update(sf::Time deltaTime) {
+void Game::update(Time deltaTime) {
     switch (currentGameState) {
         case GameState::MainMenu:
             updateMainMenu(deltaTime);
@@ -125,88 +96,68 @@ void Game::update(sf::Time deltaTime) {
             bird.update(deltaTime);
             checkCollisions();
 
-            // Remove stopped sounds from the queue to prevent memory leak
-            soundQueue.erase(
-                std::remove_if(soundQueue.begin(), soundQueue.end(), [](const sf::Sound& s) {
-                    return s.getStatus() == sf::Sound::Stopped;
-                }),
-                soundQueue.end()
-            );
+            soundQueue.erase(remove_if(soundQueue.begin(), soundQueue.end(),
+                [](const Sound& s){ return s.getStatus() == Sound::Stopped; }),
+                soundQueue.end());
+
+            if (bird.isFlying() && bird.getPosition().y >= 500.f) {
+                cout << "Bird hit the ground. Resetting level and score.\n";
+                resetLevel();
+                score = 0;
+                updateScoreText();
+            }
 
             if (!pendingLevelReset) {
-                // Check if all pigs are destroyed
-                bool allPigsDestroyed = true;
-                for (const auto& pig : pigs) {
-                    if (pig.isAlive()) {
-                        allPigsDestroyed = false;
-                        break;
-                    }
-                }
+                bool allPigsDestroyed = all_of(pigs.begin(), pigs.end(),
+                    [](const Pig& pig){ return !pig.isAlive(); });
                 if (allPigsDestroyed) {
                     pendingLevelReset = true;
                     levelResetTimer.restart();
-                    std::cout << "All pigs destroyed! Waiting to reset level..." << std::endl;
+                    cout << "All pigs destroyed! Waiting to reset level...\n";
                 }
-            } else {
-                // Wait 1.2 seconds before resetting level to allow sound to play
-                if (levelResetTimer.getElapsedTime().asSeconds() > 1.2f) {
-                    std::cout << "Level complete! Resetting now." << std::endl;
-                    resetLevel();
-                    pendingLevelReset = false;
-                }
+            } else if (levelResetTimer.getElapsedTime().asSeconds() > 1.2f) {
+                cout << "Level complete! Resetting now.\n";
+                resetLevel();
+                pendingLevelReset = false;
             }
             break;
         case GameState::GameOver:
-            // Update game over screen logic
             break;
     }
 }
 
 void Game::render() {
-    window.clear(sf::Color(100, 149, 237)); // Sky blue background
+    window.clear(Color(100, 149, 237));
 
-    // Render based on current game state
     switch (currentGameState) {
         case GameState::MainMenu:
             drawMainMenu();
             break;
-        case GameState::Playing:
-        { // <--- NEW: Open brace to create a new scope for variable declarations
-            // Draw slingshot base (simple rectangle for now)
-            sf::RectangleShape slingshotBase({50.0f, 150.0f});
-            slingshotBase.setFillColor(sf::Color(139, 69, 19)); // Brown
-            slingshotBase.setPosition(80.0f, 450.0f);
+        case GameState::Playing: {
+            RectangleShape slingshotBase({50.f, 150.f});
+            slingshotBase.setFillColor(Color(139, 69, 19));
+            slingshotBase.setPosition(80.f, 450.f);
             window.draw(slingshotBase);
 
-            // Draw ground (simple rectangle)
-            sf::RectangleShape ground({800.0f, 100.0f});
-            ground.setFillColor(sf::Color(100, 70, 0)); // Dark brown
-            ground.setPosition(0.0f, 500.0f);
+            RectangleShape ground({800.f, 100.f});
+            ground.setFillColor(Color(100, 70, 0));
+            ground.setPosition(0.f, 500.f);
             window.draw(ground);
 
-            // Draw aiming line if mouse is pressed and bird is not flying
             if (mousePressed && !bird.isFlying()) {
-                sf::Vertex line[] =
-                {
-                    sf::Vertex(bird.getPosition(), sf::Color::Black),
-                    sf::Vertex(mouseClickPos, sf::Color::Black)
+                Vertex line[] = {
+                    Vertex(bird.getPosition(), Color::Black),
+                    Vertex(mouseClickPos, Color::Black)
                 };
-                window.draw(line, 2, sf::Lines);
+                window.draw(line, 2, Lines);
             }
 
-            bird.draw(window); // Draw the bird
-
-            // Draw all alive pigs
-            for (auto& pig : pigs) {
-                pig.draw(window);
-            }
-            
-            // NEW: Draw the score text
+            bird.draw(window);
+            for (auto& pig : pigs) pig.draw(window);
             window.draw(scoreText);
-        } // <--- NEW: Close brace for the scope
             break;
+        }
         case GameState::GameOver:
-            // Draw game over screen elements
             break;
     }
 
@@ -214,59 +165,48 @@ void Game::render() {
 }
 
 void Game::checkCollisions() {
-    if (bird.isFlying()) {
-        for (auto& pig : pigs) {
-            if (pig.isAlive() && bird.getBounds().intersects(pig.getBounds())) {
-                pig.hit(this); // Pass 'this' (the Game object) to pig.hit()
-                bird.reset(100.0f, 450.0f); // Reset bird after hitting a pig
-                std::cout << "Pig hit!" << std::endl;
-                break; // Only hit one pig per launch for simplicity
-            }
+    if (!bird.isFlying()) return;
+    for (auto& pig : pigs) {
+        if (pig.isAlive() && bird.getBounds().intersects(pig.getBounds())) {
+            pig.hit(this);
+            bird.reset(100.f, 450.f);
+            cout << "Pig hit!\n";
+            break;
         }
     }
 }
 
 void Game::resetLevel() {
-    bird.reset(100.0f, 450.0f); // Reset bird to start position
-    pigs.clear(); // Clear existing pigs
-
-    // Add new pigs for the level, spaced out horizontally and slightly above ground
-    // Adjusted Y position to ensure pigs are fully visible above ground
-    pigs.emplace_back(600.0f, 480.0f); // Pig 1 (was 520.0f, adjusted to 480.0f)
-    pigs.emplace_back(650.0f, 480.0f); // Pig 2
-    pigs.emplace_back(700.0f, 480.0f); // Pig 3
-
-    std::cout << "Level reset. Destroy the pigs!" << std::endl;
+    bird.reset(100.f, 450.f);
+    pigs.clear();
+    pigs.emplace_back(600.f, 480.f);
+    pigs.emplace_back(650.f, 480.f);
+    pigs.emplace_back(700.f, 480.f);
+    cout << "Level reset. Destroy the pigs!\n";
 }
 
-// Main Menu specific methods
-void Game::handleMainMenuInput(sf::Event& event) {
-    if (event.type == sf::Event::KeyPressed) {
-        if (event.key.code == sf::Keyboard::Space) {
-            currentGameState = GameState::Playing; // Transition to playing state
-            resetLevel(); // Initialize game elements for playing
-        }
+void Game::handleMainMenuInput(Event& event) {
+    if (event.type == Event::KeyPressed && event.key.code == Keyboard::Space) {
+        currentGameState = GameState::Playing;
+        resetLevel();
     }
 }
 
-void Game::updateMainMenu(sf::Time deltaTime) {
-    // No dynamic updates for this simple menu, but could add animations etc.
-}
+void Game::updateMainMenu(Time) {}
 
 void Game::drawMainMenu() {
-    window.clear(sf::Color::Black); // Black background for menu
+    window.clear(Color::Black);
     window.draw(titleText);
     window.draw(startText);
 }
 
-// NEW: Scoreboard methods
 void Game::addScore(int points) {
     score += points;
     updateScoreText();
 }
 
 void Game::updateScoreText() {
-    std::stringstream ss;
+    stringstream ss;
     ss << "Score: " << score;
     scoreText.setString(ss.str());
 }

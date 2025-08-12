@@ -1,87 +1,75 @@
-// src/Bird.cpp
 #include "Bird.hpp"
 #include <iostream>
+using namespace std;
+using namespace sf;
 
 Bird::Bird(float startX, float startY) :
-    initialPosition(startX, startY),
-    flying(false)
+    initialPosition(startX, startY), flying(false) 
 {
-    // Always initialize shape first as a fallback
-    shape.setRadius(20.0f);
-    shape.setFillColor(sf::Color::Red); // Default to red circle
+    shape.setRadius(20.f);
+    shape.setFillColor(Color::Red);
     shape.setOrigin(shape.getRadius(), shape.getRadius());
     shape.setPosition(initialPosition);
-    shape.setOutlineThickness(0); // No outline by default
+    shape.setOutlineThickness(0);
 
-    // Load bird texture and set up sprite
     if (!texture.loadFromFile("src/bird.png")) {
-        std::cerr << "Error: Could not load bird.png! Drawing red circle fallback." << std::endl;
-        shape.setOutlineThickness(2); // Add outline for fallback visibility
-        shape.setOutlineColor(sf::Color::Black);
+        cerr << "Error: Could not load bird.png!\n";
+        shape.setOutlineThickness(2);
+        shape.setOutlineColor(Color::Black);
     } else {
         sprite.setTexture(texture);
-        sprite.setOrigin(texture.getSize().x / 2.0f, texture.getSize().y / 2.0f);
-        // Make the bird sprite large and always visible (e.g., 80x80 px)
-        sprite.setScale(80.0f / texture.getSize().x, 80.0f / texture.getSize().y);
+        sprite.setOrigin(texture.getSize().x / 2.f, texture.getSize().y / 2.f);
+        sprite.setScale(80.f / texture.getSize().x, 80.f / texture.getSize().y);
         sprite.setPosition(initialPosition);
-
-        // Make shape transparent as sprite is now the visual, but keep its position/size aligned
-        shape.setRadius(sprite.getGlobalBounds().width / 2.0f);
+        shape.setRadius(sprite.getGlobalBounds().width / 2.f);
         shape.setOrigin(shape.getRadius(), shape.getRadius());
         shape.setPosition(initialPosition);
-        shape.setFillColor(sf::Color::Transparent);
+        shape.setFillColor(Color::Transparent);
     }
-    velocity = {0.0f, 0.0f};
+    velocity = {0.f, 0.f};
 }
 
 void Bird::launch(float initialVelX, float initialVelY) {
-    if (!flying) { // Only launch if not already flying
+    if (!flying) {
         velocity = {initialVelX, initialVelY};
         flying = true;
     }
 }
 
-void Bird::update(sf::Time deltaTime) {
+void Bird::update(Time dt) {
     if (flying) {
-        // Apply gravity
-        velocity.y += gravity * deltaTime.asSeconds();
-
-        // Update position of both sprite and shape
-        sprite.move(velocity * deltaTime.asSeconds());
-        shape.move(velocity * deltaTime.asSeconds());
-
-        // Simple boundary check (e.g., stop at bottom of screen)
-        if (shape.getPosition().y + shape.getRadius() > 600.0f) {
-            shape.setPosition(shape.getPosition().x, 600.0f - shape.getRadius());
-            sprite.setPosition(shape.getPosition()); // Keep sprite and shape in sync
+        velocity.y += gravity * dt.asSeconds();
+        sprite.move(velocity * dt.asSeconds());
+        shape.move(velocity * dt.asSeconds());
+        if (shape.getPosition().y + shape.getRadius() > 600.f) {
+            shape.setPosition(shape.getPosition().x, 600.f - shape.getRadius());
+            sprite.setPosition(shape.getPosition());
             velocity.y = 0;
             flying = false;
         }
     }
 }
 
-void Bird::draw(sf::RenderWindow& window) {
-    // Draw the sprite if texture loaded, otherwise draw the shape fallback
-    if (texture.getSize().x > 0 && texture.getSize().y > 0) { // Check if texture is valid
+void Bird::draw(RenderWindow& window) {
+    if (texture.getSize().x > 0 && texture.getSize().y > 0)
         window.draw(sprite);
-    } else {
-        window.draw(shape); // Draw the red circle fallback
-    }
+    else
+        window.draw(shape);
 }
 
 void Bird::reset(float startX, float startY) {
     shape.setPosition(startX, startY);
-    sprite.setPosition(startX, startY); // Keep sprite and shape in sync
-    velocity = {0.0f, 0.0f};
+    sprite.setPosition(startX, startY);
+    velocity = {0.f, 0.f};
     flying = false;
 }
 
-sf::Vector2f Bird::getPosition() const {
-    return shape.getPosition(); // Return position of the collision shape
+Vector2f Bird::getPosition() const {
+    return shape.getPosition();
 }
 
-sf::FloatRect Bird::getBounds() const {
-    return shape.getGlobalBounds(); // Return bounds of the collision shape
+FloatRect Bird::getBounds() const {
+    return shape.getGlobalBounds();
 }
 
 bool Bird::isFlying() const {
