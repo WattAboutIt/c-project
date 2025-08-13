@@ -1,0 +1,1 @@
+g++ src/main.cpp src/Game.cpp src/Bird.cpp src/Pig.cpp -o angrybirds -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio

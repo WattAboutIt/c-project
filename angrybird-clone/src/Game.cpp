@@ -14,7 +14,7 @@ Game::Game() :
     pendingLevelReset(false),
     score(0)
 {
-    window.setFramerateLimit(60);
+    window.setFramerateLimit(120);
     Pig::loadResources();
 
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
@@ -79,7 +79,7 @@ void Game::processEvents() {
                     bird.launch(launchVector.x * powerMultiplier, launchVector.y * powerMultiplier);
                     mousePressed = false;
                 }
-                if (event.type == Event::KeyPressed && event.key.code == Keyboard::R) resetLevel();
+                if (event.type == Event::KeyPressed && event.key.code == Keyboard::R) {resetLevel(); score = 0; updateScoreText();}
                 break;
             case GameState::GameOver:
                 break;
